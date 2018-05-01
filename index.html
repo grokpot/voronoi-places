@@ -4,9 +4,30 @@
     <meta charset="UTF-8">
     <title>Voronoi Transit Map</title>
     <style>
+        body {
+            margin: 0;
+        }
+        h1, h2, h3, h4 {
+            margin: 0;
+        }
+        main {
+            margin: 10px;
+        }
+        .container {
+            display: flex;
+            height: 600px
+        }
         #map {
-            height: 600px;
-            width: 1000px;
+            width: 80%;
+        }
+        nav {
+            width: 19%;
+        }
+        .radio-choices {
+            margin-left: 10px;
+        }
+        .radio-choice {
+            width: 100%;
         }
 
         .SvgOverlay {
@@ -28,6 +49,7 @@
             width: 100%;
             height: 20px;
             text-align: center;
+            background-color: lightblue;
         }
         .made_with{
             text-align: center;
@@ -38,8 +60,31 @@
     </style>
 </head>
 <body>
-    <h3>Voronoi Transit Map</h3>
-    <div id="map"></div>
+    <main>
+        <h2>Voronoi Transit Map</h2>
+        <div class="container">
+            <div id="map"></div>
+            <nav>
+                <div class="radio-choices">
+                    <h4>Choose Transit Type:</h4>
+                    <div class="radio-choice">
+                        <input type="radio" id="radio-subway" name="transit-type" value="subway">
+                        <label for="radio-subway">Subway</label>
+                    </div>
+
+                    <div class="radio-choice">
+                        <input type="radio" id="radio-bus" name="transit-type" value="bus">
+                        <label for="radio-bus">Bus</label>
+                    </div>
+
+                    <div class="radio-choice">
+                        <input type="radio" id="radio-combined" name="transit-type" value="combined">
+                        <label for="radio-combined">Combined Transit</label>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </main>
     <footer>
         <span class="made_with">
             Made with <span class="heart">&#9829;</span> in München
