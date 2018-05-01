@@ -43,18 +43,32 @@
 	        munich = {lat: 48.1351, lng: 11.5820};
 
 	        map = new google.maps.Map(document.getElementById('map'), {
-	          zoom: 14,
-	          center: munich
+	            center: munich,
+                zoom: 14,
+                minZoom: 12
 	        });
 
             service = new google.maps.places.PlacesService(map);
 
-            performSearch()
+            // https://stackoverflow.com/questions/6981308/google-map-api-v3-drag-event-on-map
+            google.maps.event.addListener(map, 'dragend', function() {
+                clearMarkers();
+                performSearch()
+            });
+            google.maps.event.addListener(map, 'zoom_changed', function() {
+                clearMarkers();
+                performSearch()
+            });
 	    }
 
+	    function clearMarkers() {
+            while(allMarkers.length) { allMarkers.pop().setMap(null); }
+        }
+
 	    function performSearch() {
+		    console.log("center: " + map.getCenter());
           service.nearbySearch(
-              {location: munich, radius: 10000, type: ['subway_station']},
+              {location: map.getCenter(), type: ['subway_station'], rankBy: google.maps.places.RankBy.DISTANCE},
               function(results, status, pagination) {
                   if (status !== 'OK') return;
 
@@ -80,7 +94,7 @@
                 allMarkers.push(marker);
                 bounds.extend(place.geometry.location);
             }
-            map.fitBounds(bounds);
+            // map.fitBounds(bounds);
         }
 
         // function callback(results, status) {
@@ -129,7 +143,6 @@
 
                     var getCoordinateAsSVG = function (marker) {
                         var pixelCoordinates = overlayProjection.fromLatLngToDivPixel(marker.getPosition());
-                        console.log([pixelCoordinates.x, pixelCoordinates.y]);
                         return [pixelCoordinates.x + 4000, pixelCoordinates.y + 4000];
                     };
 
@@ -156,20 +169,18 @@
                     .attr("class", "cell")
                     .attr(pathAttr)
 
-
-                    var circleAttr = {
-                        "cx":function(d, i) { return positions[i][0]; },
-                        "cy":function(d, i) { return positions[i][1]; },
-                        "r":2,
-                        fill:"red"
-                    };
-
-                    svgoverlay.selectAll("circle")
-                        .data(allMarkers)
-                        // .attr(circleAttr)
-                        .enter()
-                        .append("svg:circle")
-                      .attr(circleAttr)
+                    // var circleAttr = {
+                    //     "cx":function(d, i) { return coordinatesAsSVG[i][0]; },
+                    //     "cy":function(d, i) { return coordinatesAsSVG[i][1]; },
+                    //     "r":2,
+                    //     fill:"red"
+                    // };
+                    // svgoverlay.selectAll("circle")
+                    //     .data(allMarkers)
+                    //     .attr(circleAttr)
+                    //     .enter()
+                    //     .append("svg:circle")
+                    //   .attr(circleAttr)
 
                     // https://stackoverflow.com/questions/17057809/d3-js-what-is-g-in-appendg-d3-js-code
                     // var polygon = div.chil.append("g")
@@ -186,6 +197,7 @@
 
         initMap();
         initOverlay();
+        performSearch()
 
     </script>
   </body>
