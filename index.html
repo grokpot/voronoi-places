@@ -1,204 +1,184 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <style>
-       #map {
-        height: 600px;
-        width: 1000px;
-       }
-       .SvgOverlay {
-         position: relative;
-         width: 900px;
-         height: 600px;
-       }
-       .SvgOverlay svg {
-         position: absolute;
-         top: -4000px;
-         left: -4000px;
-         width: 8000px;
-         height: 8000px;
-       }
+        #map {
+            height: 600px;
+            width: 1000px;
+        }
+
+        .SvgOverlay {
+            position: relative;
+            width: 900px;
+            height: 600px;
+        }
+
+        .SvgOverlay svg {
+            position: absolute;
+            top: -4000px;
+            left: -4000px;
+            width: 8000px;
+            height: 8000px;
+        }
     </style>
-  </head>
-  <body>
-    <h3>My Google Maps Demo</h3>
-    <div id="map"></div>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBna5IEkqyDHckh6znjJ8gIA_rL4y3T9bI&libraries=places"></script>
-    <!--<script src="https://d3js.org/d3.v5.min.js"></script>-->
-    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-    <script>
-      // http://bl.ocks.org/shimizu/5610671
-      // http://serversideguy.com/2017/10/31/how-do-i-place-svgs-on-a-google-map-using-custom-overlays/
-      // https://developers.google.com/maps/documentation/javascript/customoverlays
-      // https://developers.google.com/maps/documentation/javascript/places#PlaceSearchPaging
-      // http://d3-wiki.readthedocs.io/zh_CN/master/Voronoi-Geom/
+</head>
+<body>
+<h3>My Google Maps Demo</h3>
+<div id="map"></div>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBna5IEkqyDHckh6znjJ8gIA_rL4y3T9bI&libraries=places"></script>
+<!--<script src="https://d3js.org/d3.v5.min.js"></script>-->
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script>
+    // http://bl.ocks.org/shimizu/5610671
+    // http://serversideguy.com/2017/10/31/how-do-i-place-svgs-on-a-google-map-using-custom-overlays/
+    // https://developers.google.com/maps/documentation/javascript/customoverlays
+    // https://developers.google.com/maps/documentation/javascript/places#PlaceSearchPaging
+    // http://d3-wiki.readthedocs.io/zh_CN/master/Voronoi-Geom/
 
-        var overlay;
-        var map;
-        var allMarkers = [];
-        var service = null;
-        var munich = null;
+    var map;
+    var allMarkers = [];
+    var service = null;
 
-		function initMap() {
-	        munich = {lat: 48.1351, lng: 11.5820};
+    function initMap() {
+        var munich = {lat: 48.1351, lng: 11.5820};
 
-	        map = new google.maps.Map(document.getElementById('map'), {
-	            center: munich,
-                zoom: 14,
-                minZoom: 12
-	        });
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: munich,
+            zoom: 14,
+            minZoom: 12
+        });
 
-            service = new google.maps.places.PlacesService(map);
+        service = new google.maps.places.PlacesService(map);
 
-            // https://stackoverflow.com/questions/6981308/google-map-api-v3-drag-event-on-map
-            google.maps.event.addListener(map, 'dragend', function() {
-                clearMarkers();
-                performSearch()
-            });
-            google.maps.event.addListener(map, 'zoom_changed', function() {
-                clearMarkers();
-                performSearch()
-            });
-	    }
+        // https://stackoverflow.com/questions/6981308/google-map-api-v3-drag-event-on-map
+        google.maps.event.addListener(map, 'dragend', function () {
+            clearMarkers();
+            performSearch()
+        });
+        google.maps.event.addListener(map, 'zoom_changed', function () {
+            clearMarkers();
+            performSearch()
+        });
+    }
 
-	    function clearMarkers() {
-            while(allMarkers.length) { allMarkers.pop().setMap(null); }
+    function clearMarkers() {
+        while (allMarkers.length) {
+            allMarkers.pop().setMap(null);
         }
+    }
 
-	    function performSearch() {
-		    console.log("center: " + map.getCenter());
-          service.nearbySearch(
-              {location: map.getCenter(), type: ['subway_station'], rankBy: google.maps.places.RankBy.DISTANCE},
-              function(results, status, pagination) {
-                  if (status !== 'OK') return;
+    function performSearch() {
+        service.nearbySearch(
+            {location: map.getCenter(), type: ['subway_station'], rankBy: google.maps.places.RankBy.DISTANCE},
+            function (results, status, pagination) {
+                if (status !== 'OK') return;
 
-                  getNextPage = pagination.hasNextPage && function() {
-                      pagination.nextPage();
-                  };
-                  createMarkers(results);
-                  // if (getNextPage) {
-                  //     performSearch();
-                  // }
-          });
+                getNextPage = pagination.hasNextPage && function () {
+                    pagination.nextPage();
+                };
+                createMarkers(results);
+                // if (getNextPage) {
+                //     performSearch();
+                // }
+            });
+    }
+
+    function createMarkers(places) {
+        var bounds = new google.maps.LatLngBounds();
+
+        for (var i = 0, place; place = places[i]; i++) {
+            var marker = new google.maps.Marker({
+                map: map,
+                title: place.name,
+                position: place.geometry.location
+            });
+            allMarkers.push(marker);
+            bounds.extend(place.geometry.location);
         }
+        // map.fitBounds(bounds);
+    }
 
-        function createMarkers(places) {
-            var bounds = new google.maps.LatLngBounds();
+    function initOverlay() {
+        var overlay = new google.maps.OverlayView();
 
-            for (var i = 0, place; place = places[i]; i++) {
-                var marker = new google.maps.Marker({
-                    map: map,
-                    title: place.name,
-                    position: place.geometry.location
+        overlay.onAdd = function () {
+
+            var layer = d3.select(this.getPanes().overlayLayer).append("div").attr("class", "SvgOverlay");
+            var svg = layer.append("svg");
+            var svgoverlay = svg.append("g").attr("class", "divisions");
+
+            overlay.draw = function () {
+                // We use the south-west and north-east
+                // coordinates of the overlay to peg it to the correct position and size.
+                // To do this, we need to retrieve the projection from the overlay.
+                var overlayProjection = this.getProjection();
+
+                // // Retrieve the south-west and north-east coordinates of this overlay
+                // // in LatLngs and convert them to pixel coordinates.
+                // // We'll use these coordinates to resize the div.
+                // var sw = overlayProjection.fromLatLngToDivPixel(this.bounds_.getSouthWest());
+                // var ne = overlayProjection.fromLatLngToDivPixel(this.bounds_.getNorthEast());
+
+                var getCoordinateAsSVG = function (marker) {
+                    var pixelCoordinates = overlayProjection.fromLatLngToDivPixel(marker.getPosition());
+                    return [pixelCoordinates.x + 4000, pixelCoordinates.y + 4000];
+                };
+
+                var coordinatesAsSVG = [];
+                allMarkers.forEach(function (marker) {
+                    coordinatesAsSVG.push(getCoordinateAsSVG(marker));
                 });
-                allMarkers.push(marker);
-                bounds.extend(place.geometry.location);
-            }
-            // map.fitBounds(bounds);
-        }
 
-        // function callback(results, status) {
-	    	// if (status === google.maps.places.PlacesServiceStatus.OK) {
-	    	// 	for (var i = 0; i < results.length; i++) {
-	    	// 		createMarker(results[i]);
-	    	// 	}
-	    	// }
-        //
-        //     var svgBounds = new google.maps.LatLngBounds(
-        //         new google.maps.LatLng(46, 10),
-        //         new google.maps.LatLng(50, 12));
-        //     initOverlay(svgBounds);
-        // }
-        //
-        // function createMarker(place) {
-        //     console.log(place);
-        //     var placeLoc = place.geometry.location;
-        //     var marker = new google.maps.Marker({
-        //         map: map,
-        //         position: placeLoc
-        //     });
-        //     allMarkers.push(marker);
-        // }
+                var polygons = d3.geom.voronoi()(coordinatesAsSVG);
 
-        function initOverlay() {
-            var overlay = new google.maps.OverlayView();
+                var pathAttr = {
+                    "d": function (d, i) {
+                        return "M" + polygons[i].join("L") + "Z"
+                    },
+                    stroke: "red",
+                    fill: "none"
+                };
 
-            overlay.onAdd = function () {
-
-                var layer = d3.select(this.getPanes().overlayLayer).append("div").attr("class", "SvgOverlay");
-                var svg = layer.append("svg");
-                var svgoverlay = svg.append("g").attr("class", "divisions");
-
-                overlay.draw = function () {
-                    // We use the south-west and north-east
-                    // coordinates of the overlay to peg it to the correct position and size.
-                    // To do this, we need to retrieve the projection from the overlay.
-                    var overlayProjection = this.getProjection();
-
-                    // // Retrieve the south-west and north-east coordinates of this overlay
-                    // // in LatLngs and convert them to pixel coordinates.
-                    // // We'll use these coordinates to resize the div.
-                    // var sw = overlayProjection.fromLatLngToDivPixel(this.bounds_.getSouthWest());
-                    // var ne = overlayProjection.fromLatLngToDivPixel(this.bounds_.getNorthEast());
-
-                    var getCoordinateAsSVG = function (marker) {
-                        var pixelCoordinates = overlayProjection.fromLatLngToDivPixel(marker.getPosition());
-                        return [pixelCoordinates.x + 4000, pixelCoordinates.y + 4000];
-                    };
-
-                    var coordinatesAsSVG = [];
-                    allMarkers.forEach(function (marker) {
-                        coordinatesAsSVG.push(getCoordinateAsSVG(marker));
-                    });
-
-                    var polygons = d3.geom.voronoi()(coordinatesAsSVG);
-
-                    var pathAttr ={
-                        "d":function(d, i) { return "M" + polygons[i].join("L") + "Z"},
-                        stroke:"red",
-                        fill:"none"
-                    };
-
-                    // https://stackoverflow.com/questions/15278380/d3-js-selectall-each-on-svg-path-undefined
-                    //境界表示
-                    svgoverlay.selectAll("path")
-                        .data(allMarkers)
-                        .attr(pathAttr)
-                        .enter()
-                        .append("svg:path")
+                // https://stackoverflow.com/questions/15278380/d3-js-selectall-each-on-svg-path-undefined
+                //境界表示
+                svgoverlay.selectAll("path")
+                    .data(allMarkers)
+                    .attr(pathAttr)
+                    .enter()
+                    .append("svg:path")
                     .attr("class", "cell")
                     .attr(pathAttr)
 
-                    // var circleAttr = {
-                    //     "cx":function(d, i) { return coordinatesAsSVG[i][0]; },
-                    //     "cy":function(d, i) { return coordinatesAsSVG[i][1]; },
-                    //     "r":2,
-                    //     fill:"red"
-                    // };
-                    // svgoverlay.selectAll("circle")
-                    //     .data(allMarkers)
-                    //     .attr(circleAttr)
-                    //     .enter()
-                    //     .append("svg:circle")
-                    //   .attr(circleAttr)
+                // var circleAttr = {
+                //     "cx":function(d, i) { return coordinatesAsSVG[i][0]; },
+                //     "cy":function(d, i) { return coordinatesAsSVG[i][1]; },
+                //     "r":2,
+                //     fill:"red"
+                // };
+                // svgoverlay.selectAll("circle")
+                //     .data(allMarkers)
+                //     .attr(circleAttr)
+                //     .enter()
+                //     .append("svg:circle")
+                //   .attr(circleAttr)
 
-                    // https://stackoverflow.com/questions/17057809/d3-js-what-is-g-in-appendg-d3-js-code
-                    // var polygon = div.chil.append("g")
-                    //     .attr("class", "polygons")
-                    //     .selectAll("path")
-                    //     .data(voronoi.polygons(sites))
-                    //     .enter().append("path")
-                    //     .call(redrawPolygon);
-                };
+                // https://stackoverflow.com/questions/17057809/d3-js-what-is-g-in-appendg-d3-js-code
+                // var polygon = div.chil.append("g")
+                //     .attr("class", "polygons")
+                //     .selectAll("path")
+                //     .data(voronoi.polygons(sites))
+                //     .enter().append("path")
+                //     .call(redrawPolygon);
             };
+        };
 
-            overlay.setMap(map);
-        }
+        overlay.setMap(map);
+    }
 
-        initMap();
-        initOverlay();
-        performSearch()
+    initMap();
+    initOverlay();
+    performSearch()
 
-    </script>
-  </body>
+</script>
+</body>
 </html>
