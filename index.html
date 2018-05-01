@@ -67,20 +67,25 @@
             <div id="map"></div>
             <nav>
                 <div class="radio-choices">
-                    <h4>Choose Transit Type:</h4>
+                    <h4>Type of Place:</h4>
                     <div class="radio-choice">
                         <input type="radio" id="radio-subway" name="transit-type" value="subway_station" checked="checked">
-                        <label for="radio-subway">Subway</label>
+                        <label for="radio-subway">Subway Station</label>
                     </div>
 
                     <div class="radio-choice">
                         <input type="radio" id="radio-bus" name="transit-type" value="bus_station">
-                        <label for="radio-bus">Bus</label>
+                        <label for="radio-bus">Bus Station</label>
                     </div>
 
                     <div class="radio-choice">
                         <input type="radio" id="radio-combined" name="transit-type" value="transit_station">
-                        <label for="radio-combined">Combined Transit</label>
+                        <label for="radio-combined">All Public Transit</label>
+                    </div>
+
+                    <div class="radio-choice">
+                        <input type="radio" id="radio-night-club" name="transit-type" value="beer garden">
+                        <label for="radio-night-club">Beer Garden</label>
                     </div>
                 </div>
             </nav>
@@ -137,19 +142,25 @@
 
     function performSearch() {
         clearMarkers();
-        service.nearbySearch(
-            {location: map.getCenter(), type: [places_type], rankBy: google.maps.places.RankBy.DISTANCE},
-            function (results, status, pagination) {
-                if (status !== 'OK') return;
 
-                getNextPage = pagination.hasNextPage && function () {
-                    pagination.nextPage();
-                };
-                createMarkers(results);
-                // if (getNextPage) {
-                //     performSearch();
-                // }
-            });
+        var options = {location: map.getCenter(), type: [places_type], rankBy: google.maps.places.RankBy.DISTANCE};
+        if (places_type === 'beer garden') {
+            options.keyword = places_type;
+        } else {
+            options.type = [places_type];
+        }
+
+        service.nearbySearch(options, function (results, status, pagination) {
+            if (status !== 'OK') return;
+
+            getNextPage = pagination.hasNextPage && function () {
+                pagination.nextPage();
+            };
+            createMarkers(results);
+            // if (getNextPage) {
+            //     performSearch();
+            // }
+        });
     }
 
     function createMarkers(places) {
