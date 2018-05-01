@@ -15,13 +15,14 @@
         }
         .container {
             display: flex;
-            height: 600px
+            flex-wrap: wrap;
+            height: 600px;
         }
         #map {
-            width: 80%;
+            flex: 1 0 500px;
         }
         nav {
-            width: 19%;
+            flex: 0 0 200px;
         }
         .radio-choices {
             margin-left: 10px;
@@ -68,17 +69,17 @@
                 <div class="radio-choices">
                     <h4>Choose Transit Type:</h4>
                     <div class="radio-choice">
-                        <input type="radio" id="radio-subway" name="transit-type" value="subway">
+                        <input type="radio" id="radio-subway" name="transit-type" value="subway_station" checked="checked">
                         <label for="radio-subway">Subway</label>
                     </div>
 
                     <div class="radio-choice">
-                        <input type="radio" id="radio-bus" name="transit-type" value="bus">
+                        <input type="radio" id="radio-bus" name="transit-type" value="bus_station">
                         <label for="radio-bus">Bus</label>
                     </div>
 
                     <div class="radio-choice">
-                        <input type="radio" id="radio-combined" name="transit-type" value="combined">
+                        <input type="radio" id="radio-combined" name="transit-type" value="transit_station">
                         <label for="radio-combined">Combined Transit</label>
                     </div>
                 </div>
@@ -106,6 +107,7 @@
     var map;
     var allMarkers = [];
     var service = null;
+    var places_type = 'subway_station';
 
     function initMap() {
         var munich = {lat: 48.1351, lng: 11.5820};
@@ -120,11 +122,9 @@
 
         // https://stackoverflow.com/questions/6981308/google-map-api-v3-drag-event-on-map
         google.maps.event.addListener(map, 'dragend', function () {
-            clearMarkers();
             performSearch()
         });
         google.maps.event.addListener(map, 'zoom_changed', function () {
-            clearMarkers();
             performSearch()
         });
     }
@@ -136,8 +136,9 @@
     }
 
     function performSearch() {
+        clearMarkers();
         service.nearbySearch(
-            {location: map.getCenter(), type: ['subway_station'], rankBy: google.maps.places.RankBy.DISTANCE},
+            {location: map.getCenter(), type: [places_type], rankBy: google.maps.places.RankBy.DISTANCE},
             function (results, status, pagination) {
                 if (status !== 'OK') return;
 
@@ -239,9 +240,19 @@
         overlay.setMap(map);
     }
 
+    function checkboxChanged(){
+        places_type = this.value;
+        performSearch();
+    }
+
     initMap();
     initOverlay();
-    performSearch()
+    performSearch();
+
+    var transitChoiceButtons = document.querySelectorAll('.radio-choice input');
+    transitChoiceButtons.forEach(function(elem) {
+        elem.addEventListener("change", checkboxChanged, false);
+    });
 
 </script>
 </html>
