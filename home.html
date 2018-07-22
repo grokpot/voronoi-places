@@ -111,7 +111,11 @@
     </footer>
 </body>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBna5IEkqyDHckh6znjJ8gIA_rL4y3T9bI&libraries=places"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js"></script>
+
+<!-- v5 -->
+<!--<script src="https://d3js.org/d3.v5.min.js"></script>-->
+<!--<script src="https://d3js.org/d3-voronoi.v1.min.js"></script>-->
 <script>
 
     /** RESOURCES
@@ -153,6 +157,9 @@
         }
     }
 
+    /**
+     * Performs a GMaps query, which calls createMarkers
+     */
     function performSearch() {
         clearMarkers();
 
@@ -176,6 +183,9 @@
         });
     }
 
+    /**
+     * Adds map markers to queried locations
+     */
     function createMarkers(places) {
         for (var i = 0, place; place = places[i]; i++) {
             var marker = new google.maps.Marker({
@@ -185,8 +195,13 @@
             });
             allMarkers.push(marker);
         }
+
+        initOverlay();
     }
 
+    /**
+     * Overlays a D3 Voronoi diagram onto the map
+     */
     function initOverlay() {
         var overlay = new google.maps.OverlayView();
 
@@ -218,7 +233,12 @@
                     coordinatesAsSVG.push(getCoordinateAsSVG(marker));
                 });
 
+                // v3
                 var polygons = d3.geom.voronoi()(coordinatesAsSVG);
+
+                // v5
+                // var voronoi = d3.voronoi(coordinatesAsSVG).extent([[0,1000],[1000,0]]);
+                // var polygons = voronoi.polygons(coordinatesAsSVG);
 
                 var pathAttr = {
                     "d": function (d, i) {
@@ -270,7 +290,6 @@
     }
 
     initMap();
-    initOverlay();
     performSearch();
 
     var transitChoiceButtons = document.querySelectorAll('.radio-choice input');
