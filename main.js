@@ -27,14 +27,8 @@ import {Delaunay} from "https://unpkg.com/d3-delaunay@5.2.1?module";
 
 /**
  * TODO
- * Replace nearbysearch with findplace
-    * https://developers.google.com/maps/documentation/javascript/places#place_search_requests
-    * Can we get more results with this API?
-    * Does the tight clustering problem below go away?
-    * If it doesn't work - pagination on places?
  * Make responsive (must look good on mobile)
- * Searching for "taxi" or "food" sends back a tight cluster (this might be if there's no results)
- * Location Search
+ * Clicking on marker shows place name
  */
 
 
@@ -52,8 +46,8 @@ let places_query_string = '';
 let overlay;
 
 const initApis = () => {
-    map_center_coords = {lat: 48.1351, lng: 11.5820};    // Munich
-    places_query_string = 'subway_station';
+    map_center_coords = {lat: 48.1351, lng: 11.5820};   // Munich
+    places_query_string = document.getElementById('search-input-place').getAttribute('placeholder');    // Initial place is search box placeholder
 
     map = new google.maps.Map(document.getElementById('map'), {
         center: map_center_coords,
@@ -145,8 +139,10 @@ VoronoiOverlay.prototype.onAdd = function() {
 
 // Called when overlay's map property set to `null`
 VoronoiOverlay.prototype.onRemove = function() {
-    // Can't use getPanes() here
-    this.div_.parentNode.removeChild(this.div_);
+    const parent = this.div_.parentNode
+    while (parent.firstChild) {
+        parent.firstChild.remove();
+    }
     this.div_ = null;
 };
 
@@ -181,6 +177,18 @@ const clearMarkers = () => {
     }
 }
 
+// Adds map markers to queried locations
+const createMarkers = places => {
+    for (var i = 0, place; place = places[i]; i++) {
+        var marker = new google.maps.Marker({
+            map: map,
+            title: place.name,
+            position: place.geometry.location
+        });
+        activeMarkers.push(marker);
+    }
+}
+
 // Queries for new places, creates markers, creates new overlay, assigns overlay to map
 const render = async () => {
     const places = await getPlaces();
@@ -191,23 +199,12 @@ const render = async () => {
 
 // Makes Places API call, returns a promise
 const getPlaces = options => {
-    var options = {location: map.getCenter(), type: [places_query_string], rankBy: google.maps.places.RankBy.DISTANCE};
-    if (places_query_string === 'beer garden') {
-        options.keyword = places_query_string;
-    } else {
-        options.type = [places_query_string];
-    }
+    var options = {bounds: map.getBounds(), query: places_query_string};
 
     return new Promise((resolve, reject) => {
-        placesService.nearbySearch(options, (results, status, pagination) => {
+        // nearbySearch vs textSearch: https://developers.google.com/maps/documentation/javascript/places#TextSearchRequests
+        placesService.textSearch(options, (results, status, pagination) => {
             if (status === 'OK') {
-                // const getNextPage = pagination.hasNextPage && function () {
-                //     pagination.nextPage();
-                // };
-                // const getNextPage = false;
-                // if (getNextPage) {
-                //     performSearch();
-                // }
                 resolve(results);
             } else {
                 if (status == 'ZERO_RESULTS') {
@@ -230,18 +227,6 @@ const geocode = address => {
             }
         })
     })
-}
-
-// Adds map markers to queried locations
-const createMarkers = places => {
-    for (var i = 0, place; place = places[i]; i++) {
-        var marker = new google.maps.Marker({
-            map: map,
-            title: place.name,
-            position: place.geometry.location
-        });
-        activeMarkers.push(marker);
-    }
 }
 
 // Event listener for Location
