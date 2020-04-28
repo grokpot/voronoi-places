@@ -31,6 +31,7 @@ import {Delaunay} from "https://unpkg.com/d3-delaunay@5.2.1?module";
     * https://developers.google.com/maps/documentation/javascript/places#place_search_requests
     * Can we get more results with this API?
     * Does the tight clustering problem below go away?
+    * If it doesn't work - pagination on places?
  * Make responsive (must look good on mobile)
  * Searching for "taxi" or "food" sends back a tight cluster (this might be if there's no results)
  * Location Search
@@ -39,23 +40,32 @@ import {Delaunay} from "https://unpkg.com/d3-delaunay@5.2.1?module";
 
 // The map is made global to prevent from constant reconstruction
 let map;
-// Google Places service made global so we can make calls upon UI interaction
-var service = null;
+let placesService = null;
+let geocoderService = null
+// Coordinates of the map location, of type {lat: x, lng: y}
+let map_center_coords = {};
 // An array of markers on the map
-var activeMarkers = [];
+let activeMarkers = [];
 // The type of Place to use as Voronoi vertices. Instantiate to subway stations
-var places_query_string = 'subway_station';
+let places_query_string = '';
 // The singleton Overlay that we'll attach/remove from the map
 let overlay;
 
 const initApis = () => {
-    // Init map
-    var munich = {lat: 48.1351, lng: 11.5820};
+    map_center_coords = {lat: 48.1351, lng: 11.5820};    // Munich
+    places_query_string = 'subway_station';
+
     map = new google.maps.Map(document.getElementById('map'), {
-        center: munich,
+        center: map_center_coords,
         zoom: 14,
         minZoom: 12
     }); 
+
+    // Init Places service
+    placesService = new google.maps.places.PlacesService(map);
+
+    // Init geocoder
+    geocoderService = new google.maps.Geocoder();
 
     // Listen to event when the user's drag is complete. This is also fired the first time the map loads
     // https://learntech.imsu.ox.ac.uk/blog/google-maps-api-v3-capturing-viewport-change-use-idle-not-bounds_changed/
@@ -140,6 +150,12 @@ VoronoiOverlay.prototype.onRemove = function() {
     this.div_ = null;
 };
 
+// Convenience method to set error banner text
+const setErrorText = text => {
+    let error_banner = document.getElementById('error-banner')
+    error_banner.innerText = text;
+}
+
 // Clears and then repopulates map
 const performRenderCycle = () => {
     derender();
@@ -148,6 +164,8 @@ const performRenderCycle = () => {
 
 // Removes the overlay from the map and clears markers
 const derender = () => {
+    setErrorText(null);
+
     if (overlay) {
         overlay.setMap(null);
         overlay = null;
@@ -181,9 +199,7 @@ const getPlaces = options => {
     }
 
     return new Promise((resolve, reject) => {
-        // Init Places service
-        service = new google.maps.places.PlacesService(map);
-        service.nearbySearch(options, (results, status, pagination) => {
+        placesService.nearbySearch(options, (results, status, pagination) => {
             if (status === 'OK') {
                 // const getNextPage = pagination.hasNextPage && function () {
                 //     pagination.nextPage();
@@ -194,9 +210,25 @@ const getPlaces = options => {
                 // }
                 resolve(results);
             } else {
-                reject(new Error('Error querying Places API with options: ' + address));
+                if (status == 'ZERO_RESULTS') {
+                    setErrorText("No results. Try searching for something else");
+                } else {
+                    setErrorText("Error querying Places API. This isn't normal!");
+                }
             }
         });
+    })
+}
+
+const geocode = address => {
+    return new Promise((resolve, reject) => {
+        geocoderService.geocode( { 'address': address}, function(results, status) {
+            if (status === 'OK') {
+                resolve(results[0].geometry.location);
+            } else {
+                setErrorText("Error querying Geocoding API. This isn't normal!");
+            }
+        })
     })
 }
 
@@ -212,9 +244,18 @@ const createMarkers = places => {
     }
 }
 
-document.getElementById('search-form').addEventListener("submit", (e) => {
+// Event listener for Location
+document.getElementById('search-form-location').addEventListener("submit", async (e) => {
     e.preventDefault();
-    places_query_string = document.getElementById('search-input').value;
+    map_center_coords = await geocode(document.getElementById('search-input-location').value);
+    map.setCenter(map_center_coords);
+    performRenderCycle();
+});
+
+// Event listener for Place
+document.getElementById('search-form-place').addEventListener("submit", (e) => {
+    e.preventDefault();
+    places_query_string = document.getElementById('search-input-place').value;
     performRenderCycle();
 });
 

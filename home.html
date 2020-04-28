@@ -26,6 +26,7 @@
             display: inline-block;
             width: 100%;
             min-width: 250px;
+            margin-bottom: 5px;
         }
         .search-container form {
             display: inline-block;
@@ -50,6 +51,10 @@
         .search-container .search-suggestions {
             display: inline-block;
             margin-left: 15px;
+        }
+
+        #error-banner {
+            color: crimson;
         }
 
         /* TODO: Needed? */
@@ -82,14 +87,22 @@
 <body>
     <nav>
         <div class="search-container">
-            <form id="search-form">
+            <form id="search-form-location">
                 <!-- keep input and button inline or a wild space appears -->
-                <input id="search-input" type="text" placeholder="subway station" name="search"><button type="submit"><i class="fa fa-search"></i></button>
+                <input id="search-input-location" type="text" placeholder="Munich, Germany" name="search"><button type="submit"><i class="fa fa-search"></i></button>
             </form>
-            <div class="search-suggestions">Search suggestions: beer garden, supermarket, Blockbuster video</div>
+            <div class="search-suggestions">Location</div>
+        </div>
+        <div class="search-container">
+            <form id="search-form-place">
+                <!-- keep input and button inline or a wild space appears -->
+                <input id="search-input-place" type="text" placeholder="subway station" name="search"><button type="submit"><i class="fa fa-search"></i></button>
+            </form>
+            <div class="search-suggestions">Places suggestions: beer garden, supermarket, Blockbuster video</div>
         </div>
     </nav>
     <main>
+        <span id="error-banner"></span>
         <div id="map"></div>
     </main>
     <footer>
