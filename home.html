@@ -1,42 +1,63 @@
 <!DOCTYPE html>
-<html>
 <head>
     <meta charset="UTF-8">
-    <title>Voronoi Transit Map</title>
+    <title>Voronoi Places Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Google API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAbRngaQVPvxSD1B3Xj6lmhCWTVPUjOLMQ&libraries=places"></script>
+    <!-- D3 v5 -->
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <!-- JS Modules in HTML: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules -->
+    <!-- Must be served. Quick server: https://stackoverflow.com/questions/46992463/es6-module-support-in-chrome-62-chrome-canary-64-does-not-work-locally-cors-er -->
+    <script type="module" src="main.js"></script>
     <style>
         body {
             margin: 0;
+            font: 400 14px Helvetica, Arial, sans-serif;
         }
         h1, h2, h3, h4 {
             margin: 0;
         }
-        main {
-            margin: 10px;
-        }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            height: 600px;
-        }
         #map {
-            flex: 1 0 500px;
-        }
-        nav {
-            flex: 0 0 200px;
-        }
-        .radio-choices {
-            margin-left: 10px;
-        }
-        .radio-choice {
             width: 100%;
+            height: 500px;
+        }
+        .search-container{
+            display: inline-block;
+            width: 100%;
+            min-width: 250px;
+        }
+        .search-container form {
+            display: inline-block;
+        }
+        .search-container input[type=text] {
+            padding: 5px;
+            border: 1px solid #ccc;
+            min-width: 200px;
+            font: 400 14px Helvetica, Arial, sans-serif;
+        }
+        .search-container button {
+            padding: 6px 10px;
+            background: #ddd;
+            border: none;
+            cursor: pointer;
+            display: inline-block;
+            font: 400 14px Helvetica, Arial, sans-serif;
+        }
+        .search-container button:hover {
+            background: #ccc;
+        }
+        .search-container .search-suggestions {
+            display: inline-block;
+            margin-left: 15px;
         }
 
+        /* TODO: Needed? */
         .SvgOverlay {
             position: relative;
             width: 900px;
             height: 600px;
         }
-
         .SvgOverlay svg {
             position: absolute;
             top: -4000px;
@@ -44,16 +65,14 @@
             width: 8000px;
             height: 8000px;
         }
+
         footer {
-            position: fixed;
-            bottom: 0;
+            display: flex;
             width: 100%;
             height: 20px;
-            text-align: center;
+            align-items: center;
+            justify-content: center;
             background-color: lightblue;
-        }
-        .made_with{
-            text-align: center;
         }
         .heart {
             color: #e25555;
@@ -61,241 +80,19 @@
     </style>
 </head>
 <body>
+    <nav>
+        <div class="search-container">
+            <form id="search-form">
+                <!-- keep input and button inline or a wild space appears -->
+                <input id="search-input" type="text" placeholder="subway station" name="search"><button type="submit"><i class="fa fa-search"></i></button>
+            </form>
+            <div class="search-suggestions">Search suggestions: beer garden, supermarket, Blockbuster video</div>
+        </div>
+    </nav>
     <main>
-        <h2>Voronoi Transit Map</h2>
-        <div class="container">
-            <div id="map"></div>
-            <nav>
-                <div class="radio-choices">
-                    <h4>Type of Place:</h4>
-                    <div class="radio-choice">
-                        <input type="radio" id="radio-subway" name="transit-type" value="subway_station" checked="checked">
-                        <label for="radio-subway">Subway Station</label>
-                    </div>
-
-                    <div class="radio-choice">
-                        <input type="radio" id="radio-bus" name="transit-type" value="bus_station">
-                        <label for="radio-bus">Bus Station</label>
-                    </div>
-
-                    <div class="radio-choice">
-                        <input type="radio" id="radio-combined" name="transit-type" value="transit_station">
-                        <label for="radio-combined">All Public Transit</label>
-                    </div>
-
-                    <div class="radio-choice">
-                        <input type="radio" id="radio-beer-garden" name="transit-type" value="beer garden">
-                        <label for="radio-beer-garden">Beer Garden</label>
-                    </div>
-
-                    <div class="radio-choice">
-                        <input type="radio" id="radio-supermarket" name="transit-type" value="supermarket">
-                        <label for="radio-supermarket">Supermarket</label>
-                    </div>
-                </div>
-            </nav>
-        </div>
-        <div class="container">
-            TODO:
-            <ul>
-                <li>Add search bar to change location</li>
-                <li>Get Supermarket working</li>
-                <li>Add search bar for custom terms</li>
-            </ul>
-        </div>
+        <div id="map"></div>
     </main>
     <footer>
-        <span class="made_with">
-            Made with <span class="heart">&#9829;</span> in München
-        </span>
+        <span>Made with <span class="heart">&#9829;</span> in München</span>
     </footer>
 </body>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBna5IEkqyDHckh6znjJ8gIA_rL4y3T9bI&libraries=places"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js"></script>
-
-<!-- v5 -->
-<!--<script src="https://d3js.org/d3.v5.min.js"></script>-->
-<!--<script src="https://d3js.org/d3-voronoi.v1.min.js"></script>-->
-<script>
-
-    /** RESOURCES
-     * http://bl.ocks.org/shimizu/5610671
-     * http://serversideguy.com/2017/10/31/how-do-i-place-svgs-on-a-google-map-using-custom-overlays/
-     * https://developers.google.com/maps/documentation/javascript/customoverlays
-     * https://developers.google.com/maps/documentation/javascript/places#PlaceSearchPaging
-     * http://d3-wiki.readthedocs.io/zh_CN/master/Voronoi-Geom/
-     **/
-
-    var map;
-    var allMarkers = [];
-    var service = null;
-    var places_type = 'subway_station';
-
-    function initMap() {
-        var munich = {lat: 48.1351, lng: 11.5820};
-
-        map = new google.maps.Map(document.getElementById('map'), {
-            center: munich,
-            zoom: 14,
-            minZoom: 12
-        });
-
-        service = new google.maps.places.PlacesService(map);
-
-        // https://stackoverflow.com/questions/6981308/google-map-api-v3-drag-event-on-map
-        google.maps.event.addListener(map, 'dragend', function () {
-            performSearch()
-        });
-        google.maps.event.addListener(map, 'zoom_changed', function () {
-            performSearch()
-        });
-    }
-
-    function clearMarkers() {
-        while (allMarkers.length) {
-            allMarkers.pop().setMap(null);
-        }
-    }
-
-    /**
-     * Performs a GMaps query, which calls createMarkers
-     */
-    function performSearch() {
-        clearMarkers();
-
-        var options = {location: map.getCenter(), type: [places_type], rankBy: google.maps.places.RankBy.DISTANCE};
-        if (places_type === 'beer garden') {
-            options.keyword = places_type;
-        } else {
-            options.type = [places_type];
-        }
-
-        service.nearbySearch(options, function (results, status, pagination) {
-            if (status !== 'OK') return;
-
-            getNextPage = pagination.hasNextPage && function () {
-                pagination.nextPage();
-            };
-            createMarkers(results);
-            // if (getNextPage) {
-            //     performSearch();
-            // }
-        });
-    }
-
-    /**
-     * Adds map markers to queried locations
-     */
-    function createMarkers(places) {
-        for (var i = 0, place; place = places[i]; i++) {
-            var marker = new google.maps.Marker({
-                map: map,
-                title: place.name,
-                position: place.geometry.location
-            });
-            allMarkers.push(marker);
-        }
-
-        initOverlay();
-    }
-
-    /**
-     * Overlays a D3 Voronoi diagram onto the map
-     */
-    function initOverlay() {
-        var overlay = new google.maps.OverlayView();
-
-        overlay.onAdd = function () {
-
-            var layer = d3.select(this.getPanes().overlayLayer).append("div").attr("class", "SvgOverlay");
-            var svg = layer.append("svg");
-            var svgoverlay = svg.append("g").attr("class", "divisions");
-
-            overlay.draw = function () {
-                // We use the south-west and north-east
-                // coordinates of the overlay to peg it to the correct position and size.
-                // To do this, we need to retrieve the projection from the overlay.
-                var overlayProjection = this.getProjection();
-
-                // // Retrieve the south-west and north-east coordinates of this overlay
-                // // in LatLngs and convert them to pixel coordinates.
-                // // We'll use these coordinates to resize the div.
-                // var sw = overlayProjection.fromLatLngToDivPixel(this.bounds_.getSouthWest());
-                // var ne = overlayProjection.fromLatLngToDivPixel(this.bounds_.getNorthEast());
-
-                var getCoordinateAsSVG = function (marker) {
-                    var pixelCoordinates = overlayProjection.fromLatLngToDivPixel(marker.getPosition());
-                    return [pixelCoordinates.x + 4000, pixelCoordinates.y + 4000];
-                };
-
-                var coordinatesAsSVG = [];
-                allMarkers.forEach(function (marker) {
-                    coordinatesAsSVG.push(getCoordinateAsSVG(marker));
-                });
-
-                // v3
-                var polygons = d3.geom.voronoi()(coordinatesAsSVG);
-
-                // v5
-                // var voronoi = d3.voronoi(coordinatesAsSVG).extent([[0,1000],[1000,0]]);
-                // var polygons = voronoi.polygons(coordinatesAsSVG);
-
-                var pathAttr = {
-                    "d": function (d, i) {
-                        return "M" + polygons[i].join("L") + "Z"
-                    },
-                    stroke: "red",
-                    fill: "none"
-                };
-
-                // https://stackoverflow.com/questions/15278380/d3-js-selectall-each-on-svg-path-undefined
-                //境界表示
-                svgoverlay.selectAll("path")
-                    .data(allMarkers)
-                    .attr(pathAttr)
-                    .enter()
-                    .append("svg:path")
-                    .attr("class", "cell")
-                    .attr(pathAttr)
-
-                // var circleAttr = {
-                //     "cx":function(d, i) { return coordinatesAsSVG[i][0]; },
-                //     "cy":function(d, i) { return coordinatesAsSVG[i][1]; },
-                //     "r":2,
-                //     fill:"red"
-                // };
-                // svgoverlay.selectAll("circle")
-                //     .data(allMarkers)
-                //     .attr(circleAttr)
-                //     .enter()
-                //     .append("svg:circle")
-                //   .attr(circleAttr)
-
-                // https://stackoverflow.com/questions/17057809/d3-js-what-is-g-in-appendg-d3-js-code
-                // var polygon = div.chil.append("g")
-                //     .attr("class", "polygons")
-                //     .selectAll("path")
-                //     .data(voronoi.polygons(sites))
-                //     .enter().append("path")
-                //     .call(redrawPolygon);
-            };
-        };
-
-        overlay.setMap(map);
-    }
-
-    function checkboxChanged(){
-        places_type = this.value;
-        performSearch();
-    }
-
-    initMap();
-    performSearch();
-
-    var transitChoiceButtons = document.querySelectorAll('.radio-choice input');
-    transitChoiceButtons.forEach(function(elem) {
-        elem.addEventListener("change", checkboxChanged, false);
-    });
-
-</script>
-</html>
