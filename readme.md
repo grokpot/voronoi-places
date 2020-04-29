@@ -1,10 +1,10 @@
-[Description of project](https://ryanprater.com/blog/voronoi-places)
+### [Description of project](https://ryanprater.com/blog/voronoi-places)
 
-Files:
+### Files:
 * index.html: basic HTML. Styled for responsiveness and optimized for iframe usage
 * main.js: Where the magic happens. Heavily commented because this stuff gets confusing.
 
-Description of Infrastructure:
+### Description of Infrastructure:
 * GCP Project "Voronoi Places"
   * JS Maps API Enabled
   * Places API Enabled
