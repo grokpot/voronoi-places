@@ -13,47 +13,40 @@ import {Delaunay} from "https://unpkg.com/d3-delaunay@5.2.1?module";
  * `render()` does the opposite: makes a call to Places API and turns the results into map markers, sets `overlay` to a new instance of `VoronoiOverlay`, and connects `map` to `overlay`
  * 
  * When map is manipulated (dragged, zoomed, etc.), `idle` is again fired when the UI action is complete
+ * 
+ * Two UI listeners: change of location search box, and change of places search box. Each update global values and then call `performRenderCycle()`
  */
-
-/** RESOURCES
- * https://developers.google.com/maps/documentation/javascript/customoverlays
- * https://developers.google.com/maps/documentation/javascript/reference/overlay-view
- * https://developers.google.com/maps/documentation/javascript/places#PlaceSearchPaging
- * https://github.com/d3/d3-delaunay
- * https://github.com/d3/d3-voronoi (old)
- * https://observablehq.com/collection/@d3/d3-delaunay
- * http://bl.ocks.org/shimizu/5610671
-**/
-
-/**
- * TODO
- * Make responsive (must look good on mobile)
- * Clicking on marker shows place name
- */
-
 
 // The map is made global to prevent from constant reconstruction
 let map;
+let infoWindow = null;
 let placesService = null;
 let geocoderService = null
 // Coordinates of the map location, of type {lat: x, lng: y}
-let map_center_coords = {};
+let mapCenterCoords = {};
 // An array of markers on the map
 let activeMarkers = [];
 // The type of Place to use as Voronoi vertices. Instantiate to subway stations
-let places_query_string = '';
+let placesQueryString = '';
 // The singleton Overlay that we'll attach/remove from the map
 let overlay;
 
 const initApis = () => {
-    map_center_coords = {lat: 48.1351, lng: 11.5820};   // Munich
-    places_query_string = document.getElementById('search-input-place').getAttribute('placeholder');    // Initial place is search box placeholder
+    mapCenterCoords = {lat: 48.1351, lng: 11.5820};   // Munich
+    placesQueryString = document.getElementById('search-input-place').getAttribute('placeholder');    // Initial place is search box placeholder
 
+    // Init Map
     map = new google.maps.Map(document.getElementById('map'), {
-        center: map_center_coords,
+        center: mapCenterCoords,
         zoom: 14,
-        minZoom: 12
+        minZoom: 12,
+        streetViewControl: false,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControlOptions: { mapTypeIds: [] }
     }); 
+
+    // Init InfoWindow
+    infoWindow = new google.maps.InfoWindow();
 
     // Init Places service
     placesService = new google.maps.places.PlacesService(map);
@@ -148,8 +141,8 @@ VoronoiOverlay.prototype.onRemove = function() {
 
 // Convenience method to set error banner text
 const setErrorText = text => {
-    let error_banner = document.getElementById('error-banner')
-    error_banner.innerText = text;
+    let errorBanner = document.getElementById('error-banner')
+    errorBanner.innerText = text;
 }
 
 // Clears and then repopulates map
@@ -179,14 +172,18 @@ const clearMarkers = () => {
 
 // Adds map markers to queried locations
 const createMarkers = places => {
-    for (var i = 0, place; place = places[i]; i++) {
+    places.forEach(place => {
         var marker = new google.maps.Marker({
             map: map,
             title: place.name,
             position: place.geometry.location
         });
         activeMarkers.push(marker);
-    }
+        marker.addListener('click', function() {
+            infoWindow.setContent(marker.getTitle());
+            infoWindow.open(map, marker);
+        });
+    })
 }
 
 // Queries for new places, creates markers, creates new overlay, assigns overlay to map
@@ -197,13 +194,17 @@ const render = async () => {
     overlay.setMap(map);
 }
 
-// Makes Places API call, returns a promise
+// API call to Google Places service, returns a Promise
 const getPlaces = options => {
-    var options = {bounds: map.getBounds(), query: places_query_string};
-
+    var options = {
+        bounds: map.getBounds(), 
+        keyword: placesQueryString
+    };
     return new Promise((resolve, reject) => {
         // nearbySearch vs textSearch: https://developers.google.com/maps/documentation/javascript/places#TextSearchRequests
-        placesService.textSearch(options, (results, status, pagination) => {
+        // nearbySearch seems to work better for displaying results at center of map
+        // `keyword` seems to work better than `name`
+        placesService.nearbySearch(options, (results, status, pagination) => {
             if (status === 'OK') {
                 resolve(results);
             } else {
@@ -217,6 +218,7 @@ const getPlaces = options => {
     })
 }
 
+// API call to Google Geocode service, returns a Promise
 const geocode = address => {
     return new Promise((resolve, reject) => {
         geocoderService.geocode( { 'address': address}, function(results, status) {
@@ -232,15 +234,15 @@ const geocode = address => {
 // Event listener for Location
 document.getElementById('search-form-location').addEventListener("submit", async (e) => {
     e.preventDefault();
-    map_center_coords = await geocode(document.getElementById('search-input-location').value);
-    map.setCenter(map_center_coords);
+    mapCenterCoords = await geocode(document.getElementById('search-input-location').value);
+    map.setCenter(mapCenterCoords);
     performRenderCycle();
 });
 
 // Event listener for Place
 document.getElementById('search-form-place').addEventListener("submit", (e) => {
     e.preventDefault();
-    places_query_string = document.getElementById('search-input-place').value;
+    placesQueryString = document.getElementById('search-input-place').value;
     performRenderCycle();
 });
 

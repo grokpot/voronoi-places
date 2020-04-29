@@ -44,13 +44,13 @@
             cursor: pointer;
             display: inline-block;
             font: 400 14px Helvetica, Arial, sans-serif;
+            margin-right: 15px;
         }
         .search-container button:hover {
             background: #ccc;
         }
         .search-container .search-suggestions {
             display: inline-block;
-            margin-left: 15px;
         }
 
         #error-banner {
@@ -91,14 +91,13 @@
                 <!-- keep input and button inline or a wild space appears -->
                 <input id="search-input-location" type="text" placeholder="Munich, Germany" name="search"><button type="submit"><i class="fa fa-search"></i></button>
             </form>
-            <div class="search-suggestions">Location</div>
         </div>
         <div class="search-container">
             <form id="search-form-place">
                 <!-- keep input and button inline or a wild space appears -->
                 <input id="search-input-place" type="text" placeholder="ubahn station" name="search"><button type="submit"><i class="fa fa-search"></i></button>
             </form>
-            <div class="search-suggestions">Places suggestions: supermarket, beer garden, Blockbuster video</div>
+            <div class="search-suggestions">Suggestions: supermarket, beer garden, Blockbuster video</div>
         </div>
     </nav>
     <main>
