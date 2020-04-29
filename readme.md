@@ -1,4 +1,4 @@
-### [Description of project](https://ryanprater.com/blog/voronoi-places)
+### [Blog post of project](https://ryanprater.com/blog/voronoi-places)
 
 ### Files:
 * index.html: basic HTML. Styled for responsiveness and optimized for iframe usage
