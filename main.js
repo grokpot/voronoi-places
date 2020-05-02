@@ -1,3 +1,5 @@
+// v1.2
+
 // https://github.com/d3/d3-delaunay
 import {Delaunay} from "https://unpkg.com/d3-delaunay@5.2.1?module";
 
@@ -42,7 +44,10 @@ const initApis = () => {
         minZoom: 12,
         streetViewControl: false,
         mapTypeId: google.maps.MapTypeId.ROADMAP,
-        mapTypeControlOptions: { mapTypeIds: [] }
+        mapTypeControlOptions: { mapTypeIds: [] },
+        // Disables map dragging, in order to cut down on cost
+        gestureHandling: "none", 
+        keyboardShortcuts: false
     }); 
 
     // Init InfoWindow

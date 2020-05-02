@@ -3,7 +3,11 @@
   * Places API Enabled
   * Geocoder API Enabled
 * GCP org level
-  * Billing trigger set for $20 total monthly, auto emails me when hit, but does not turn off API
+  * Billing auto emails me when budget exceeded, but does not turn off API
+  * API quotas set:
+    * 10000 requests daily
+    * 50 requests per 100 seconds, user agnostic
+    * 50 requests per 100 seconds, per user
 * Hosted on GCP Storage
   * https://cloud.google.com/storage/docs/hosting-static-website
 * JS Modules must be served. `python3 -m http.server 8000` ran in directory is easiest.
