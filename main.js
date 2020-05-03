@@ -201,6 +201,7 @@ const render = async () => {
 
 // API call to Google Places service, returns a Promise
 const getPlaces = options => {
+    console.log('hit');
     var options = {
         bounds: map.getBounds(), 
         keyword: placesQueryString
